@@ -88,7 +88,7 @@ paddleocr:
   det_db_thresh: 0.3
   rec_batch_num: 6
 
-# Preprocessing 
+# Preprocessing
 
 preprocessing:
   correct_orientation: true  # Tesseract OSD — requires pytesseract on PATH
@@ -96,65 +96,65 @@ preprocessing:
   denoise: true              # Non-local means denoising
   normalise_contrast: true   # CLAHE contrast normalisation
   target_size: [1024, 1024]  # [width, height] output canvas
- 
+
   # Augmentation
   # Each stage has:
   #   enabled : bool  — participates in the pipeline at all
   #   p       : float — probability of firing on any given sample
   augmentation:
     enabled: true            # Master switch — set false to disable all augmentation
- 
+
     random_rotation:
       enabled: true
       p: 0.5
       max_angle: 5.0         # degrees; simulates crooked scanner placement
- 
+
     random_perspective:
       enabled: true
       p: 0.3
       distortion_scale: 0.05 # 0.05 = subtle warp; 0.10 = clearly warped
- 
+
     random_brightness:
       enabled: true
       p: 0.5
       factor_range: [0.7, 1.3]
- 
+
     random_contrast:
       enabled: true
       p: 0.5
       factor_range: [0.7, 1.3]
- 
+
     random_gaussian_blur:
       enabled: true
       p: 0.4
       radius_range: [0.5, 2.0]
- 
+
     random_jpeg_compression:
       enabled: true
       p: 0.5
       quality_range: [40, 85] # Lower = more artefacts
- 
+
     random_noise:
       enabled: true
       p: 0.4
       std_range: [5.0, 25.0]  # pixel intensity units (0–255)
- 
+
     random_shadow:
       enabled: true
       p: 0.3
       alpha_range: [0.3, 0.7]
       width_fraction: 0.35    # band width as fraction of image width
- 
+
     random_ink_bleed:
       enabled: true
       p: 0.3
       kernel_size: 2          # dilation kernel; increase for heavier bleed
- 
+
     random_erode_text:
       enabled: true
       p: 0.3
       kernel_size: 2          # erosion kernel; simulates faded ink
- 
+
     cutout:
       enabled: true
       p: 0.4
@@ -172,14 +172,14 @@ patchcore:
   k_neighbours: 9
   bank_path: "data/patchcore_bank.pt"
   score_threshold: 0.55
- 
+
 # DataLoaders
 
 dataloader:
   train_batch_size: 8
   eval_batch_size: 16
   use_weighted_sampler: true  # Up-sample minority classes during training
-  pin_memory: true      
+  pin_memory: true
 
 # Validators — Regex / Mathematical Rules Engine
 
@@ -214,12 +214,12 @@ smoke_test:
     doc_types:
       - "AADHAR_CARD"
       - "PAN_CARD"
- 
+
   preprocessing_overrides:
     target_size: [224, 224]
     correct_orientation: false
     denoise: false
- 
+
   stages:
     ingest: true
     preprocess_clean: true
@@ -230,7 +230,7 @@ smoke_test:
     ensemble: true
     output_writers: true
     dataloader: true
- 
+
   mocks:
     classifier:
       mock: true
@@ -247,10 +247,3 @@ smoke_test:
     csv_row_written: true
     audit_line_written: true
     max_elapsed_ms: 30000
-
-# Ensemble Weights (updated)
-ensemble_weights:
-  patchcore_anomaly: 0.55
-  regex_rules_engine: 0.45
-
- 
