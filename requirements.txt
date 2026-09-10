@@ -85,7 +85,7 @@ paddleocr==2.7.3
 paddlepaddle==2.6.2
 pandas==2.2.3
 pdf2docx==0.5.13
-pillow==10.4.0
+pillow==12.3.0
 pluggy==1.6.0
 premailer==3.10.0
 prettytable==3.17.0
