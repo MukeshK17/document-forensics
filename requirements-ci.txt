@@ -1,12 +1,12 @@
 # Lean dependency set for CI unit tests.
-# Deliberately excludes torch/timm/albumentations/paddleocr/transformers —
+# Deliberately excludes torch/timm/paddleocr/transformers —
 # those are only needed for dl_scorer.py and layoutlm_classifier.py,
 # which are exercised by tests marked @pytest.mark.heavy and skipped here.
 # Install requirements.txt instead for local/Kaggle work that touches the models.
 
 numpy==1.26.4
-opencv-python-headless==4.6.0.66
-pillow==10.4.0
+opencv-python-headless==4.10.0.84
+pillow==12.3.0
 PyYAML==6.0.2
 pytest==9.0.3
 pytest-cov==7.0.0

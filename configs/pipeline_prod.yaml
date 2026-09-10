@@ -20,6 +20,7 @@ layoutlmv3:
   # Pretrained model name or path to the saved model folder.
   # Can replace this with a local checkpoint path after fine-tuning.
   pretrained_model_name_or_path: "microsoft/layoutlmv3-base"
+  revision: "cfbbbff0762e6aab37086fdd4739ad14fe7d5db4"
 
   # Label mapping — must match the id2label dict used during fine-tuning.
   # Index order must align with the model's classifier head.

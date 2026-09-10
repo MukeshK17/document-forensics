@@ -54,10 +54,13 @@ class LayoutLMv3Classifier:
         path = self._cfg["pretrained_model_name_or_path"]
         logger.info("Loading LayoutLMv3 from '%s'…", path)
         self.processor = LayoutLMv3Processor.from_pretrained(
-            path, apply_ocr=self._cfg["processor"]["apply_ocr"]
+            path,
+            revision=self._cfg["revision"],
+            apply_ocr=self._cfg["processor"]["apply_ocr"],
         )
         self.model = LayoutLMv3ForSequenceClassification.from_pretrained(
             path,
+            revision=self._cfg["revision"],
             num_labels=len(self.id2label),
             id2label=self.id2label,
             label2id=self.label2id,
