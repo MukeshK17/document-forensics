@@ -39,6 +39,7 @@ import pandas as pd
 # STEP 1: Build a balanced test split from the raw dataset folders
 # ---------------------------------------------------------------------------
 
+
 def prepare_data(fake_dir: str, real_dir: str, out_dir: str, seed: int = 42):
     """
     Copies all fake images + an equal-sized random sample of real images
@@ -69,7 +70,9 @@ def prepare_data(fake_dir: str, real_dir: str, out_dir: str, seed: int = 42):
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"Total images: {len(rows)} ({len(fake_files)} fake, {len(sampled_real)} real)")
+    print(
+        f"Total images: {len(rows)} ({len(fake_files)} fake, {len(sampled_real)} real)"
+    )
     print(f"Saved to: {out_dir}/")
 
 
@@ -141,7 +144,9 @@ def run_vlm_inference(image_path: str, model, processor) -> dict:
         }
     ]
 
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    text = processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
     image_inputs, video_inputs = process_vision_info(messages)
 
     inputs = processor(
@@ -156,10 +161,13 @@ def run_vlm_inference(image_path: str, model, processor) -> dict:
         generated_ids = model.generate(**inputs, max_new_tokens=150, do_sample=False)
 
     generated_ids_trimmed = [
-        out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        out_ids[len(in_ids) :]
+        for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
     ]
     output_text = processor.batch_decode(
-        generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        generated_ids_trimmed,
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=False,
     )[0]
 
     try:
@@ -198,35 +206,52 @@ def run_vlm_on_split(test_split_dir: str, out_csv: str, checkpoint_every: int = 
             vlm_result = run_vlm_inference(row["full_path"], model, processor)
         except torch.cuda.OutOfMemoryError:
             torch.cuda.empty_cache()
-            vlm_result = {"raw_output": "OOM_ERROR", "decision": "OOM_ERROR", "confidence": None, "reason": None}
+            vlm_result = {
+                "raw_output": "OOM_ERROR",
+                "decision": "OOM_ERROR",
+                "confidence": None,
+                "reason": None,
+            }
         except Exception as e:
-            vlm_result = {"raw_output": str(e), "decision": "RUNTIME_ERROR", "confidence": None, "reason": None}
+            vlm_result = {
+                "raw_output": str(e),
+                "decision": "RUNTIME_ERROR",
+                "confidence": None,
+                "reason": None,
+            }
 
-        results.append({
-            "image_path": row["image_path"],
-            "ground_truth": row["label"],
-            "vlm_decision": vlm_result["decision"],
-            "vlm_confidence": vlm_result["confidence"],
-            "vlm_reason": vlm_result["reason"],
-            "raw_output": vlm_result["raw_output"],
-        })
+        results.append(
+            {
+                "image_path": row["image_path"],
+                "ground_truth": row["label"],
+                "vlm_decision": vlm_result["decision"],
+                "vlm_confidence": vlm_result["confidence"],
+                "vlm_reason": vlm_result["reason"],
+                "raw_output": vlm_result["raw_output"],
+            }
+        )
 
         torch.cuda.empty_cache()
 
         if len(results) % checkpoint_every == 0:
-            pd.DataFrame(results).to_csv(out_csv.replace(".csv", "_partial.csv"), index=False)
+            pd.DataFrame(results).to_csv(
+                out_csv.replace(".csv", "_partial.csv"), index=False
+            )
 
     results_df = pd.DataFrame(results)
     results_df.to_csv(out_csv, index=False)
 
     print(results_df["vlm_decision"].value_counts())
-    print(f"\nDistinct reason strings: {results_df['vlm_reason'].nunique()} out of {len(results_df)}")
+    print(
+        f"\nDistinct reason strings: {results_df['vlm_reason'].nunique()} out of {len(results_df)}"
+    )
     print(f"Saved to: {out_csv}")
 
 
 # ---------------------------------------------------------------------------
 # STEP 3: Merge VLM results with existing-system results and compute metrics
 # ---------------------------------------------------------------------------
+
 
 def analyze(vlm_results_csv: str, existing_results_csv: str, out_csv: str):
     from sklearn.metrics import f1_score, precision_score, recall_score
@@ -251,32 +276,42 @@ def analyze(vlm_results_csv: str, existing_results_csv: str, out_csv: str):
     y_existing = merged["collective_fake"].astype(int)
     y_vlm = (merged["vlm_decision"] == "FAKE").astype(int)
 
-    merged["existing_correct"] = (y_existing == y_true)
-    merged["vlm_correct"] = (y_vlm == y_true)
+    merged["existing_correct"] = y_existing == y_true
+    merged["vlm_correct"] = y_vlm == y_true
 
     crosstab = pd.crosstab(
-        merged["existing_correct"], merged["vlm_correct"],
-        rownames=["Existing correct"], colnames=["VLM correct"],
+        merged["existing_correct"],
+        merged["vlm_correct"],
+        rownames=["Existing correct"],
+        colnames=["VLM correct"],
     )
     print("\nComplementarity crosstab:")
     print(crosstab)
 
-    existing_right_vlm_wrong = ((merged["existing_correct"]) & (~merged["vlm_correct"])).sum()
-    existing_wrong_vlm_right = ((~merged["existing_correct"]) & (merged["vlm_correct"])).sum()
+    existing_right_vlm_wrong = (
+        (merged["existing_correct"]) & (~merged["vlm_correct"])
+    ).sum()
+    existing_wrong_vlm_right = (
+        (~merged["existing_correct"]) & (merged["vlm_correct"])
+    ).sum()
     both_wrong = ((~merged["existing_correct"]) & (~merged["vlm_correct"])).sum()
     both_right = ((merged["existing_correct"]) & (merged["vlm_correct"])).sum()
 
     print(f"\nBoth correct: {both_right}")
     print(f"Existing correct, VLM wrong: {existing_right_vlm_wrong}")
-    print(f"Existing wrong, VLM correct: {existing_wrong_vlm_right}  <-- key complementarity number")
+    print(
+        f"Existing wrong, VLM correct: {existing_wrong_vlm_right}  <-- key complementarity number"
+    )
     print(f"Both wrong: {both_wrong}")
 
     y_or = ((y_vlm == 1) | (y_existing == 1)).astype(int)
 
     def report(name, y_pred):
-        print(f"{name}: F1={f1_score(y_true, y_pred):.3f} "
-              f"P={precision_score(y_true, y_pred):.3f} "
-              f"R={recall_score(y_true, y_pred):.3f}")
+        print(
+            f"{name}: F1={f1_score(y_true, y_pred):.3f} "
+            f"P={precision_score(y_true, y_pred):.3f} "
+            f"R={recall_score(y_true, y_pred):.3f}"
+        )
 
     print()
     report("Existing alone", y_existing)
@@ -293,6 +328,7 @@ def analyze(vlm_results_csv: str, existing_results_csv: str, out_csv: str):
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(description="VLM Complementarity Experiment")
