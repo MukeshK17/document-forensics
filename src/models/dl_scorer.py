@@ -27,8 +27,6 @@ try:
 except ImportError:
     TIMM_AVAILABLE = False
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
 # ── model definition (must match training exactly) ────────────────────────────
 
@@ -56,13 +54,15 @@ class PatchClassifier(nn.Module):
 # ── inference transform ───────────────────────────────────────────────────────
 
 
-def _get_transform(patch_size: int) -> A.Compose:
-    return A.Compose(
-        [
-            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-            ToTensorV2(),
-        ]
-    )
+def _get_transform(patch_size: int):
+    mean = torch.tensor((0.485, 0.456, 0.406), dtype=torch.float32).view(3, 1, 1)
+    std = torch.tensor((0.229, 0.224, 0.225), dtype=torch.float32).view(3, 1, 1)
+
+    def transform(image: np.ndarray) -> torch.Tensor:
+        tensor = torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
+        return (tensor - mean) / std
+
+    return transform
 
 
 # ── sliding window ────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ class PatchTamperScorer:
         self.device = torch.device(
             device or ("cuda" if torch.cuda.is_available() else "cpu")
         )
-        ckpt = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+        ckpt = torch.load(checkpoint_path, map_location=self.device, weights_only=True)
         self.patch_size = int(ckpt.get("patch_size", 128))
         self.threshold = float(ckpt["metrics"]["thr"])
 
@@ -154,7 +154,7 @@ class PatchTamperScorer:
             }
 
         # batch inference
-        tensors = [self.transform(image=p)["image"] for p in patches]
+        tensors = [self.transform(p) for p in patches]
         all_scores = []
         batch_size = 32
         for i in range(0, len(tensors), batch_size):

@@ -57,10 +57,9 @@ class PaddleOCRExtractor:
 
         logger.info("Loading PaddleOCR (lang=%s)…", self._lang)
         self._ocr = PaddleOCR(
-            use_angle_cls=self._use_angle_cls,
+            use_textline_orientation=self._use_angle_cls,
             lang=self._lang,
-            # show_log=False,
-            det_db_thresh=0.3,
+            text_det_thresh=0.3,
         )
         logger.info("PaddleOCR loaded.")
 
@@ -82,13 +81,12 @@ class PaddleOCRExtractor:
         words, boxes, scores = [], [], []
 
         raw = self._run_ocr_with_fallback(image)
-        if raw and raw[0] is not None:
-            for polygon, (text, score) in ((line[0], line[1]) for line in raw[0]):
-                if not text.strip() or score < self._min_score:
-                    continue
-                words.append(text)
-                boxes.append(self._norm_box(polygon, img_w, img_h))
-                scores.append(float(score))
+        for polygon, text, score in self._iter_ocr_lines(raw):
+            if not text.strip() or score < self._min_score:
+                continue
+            words.append(text)
+            boxes.append(self._norm_box(polygon, img_w, img_h))
+            scores.append(float(score))
 
         result = {"words": words, "boxes": boxes, "scores": scores}
         logger.debug("Extracted %d tokens.", len(words))
@@ -130,6 +128,25 @@ class PaddleOCRExtractor:
         self._cache_path(image).write_text(json.dumps(result), encoding="utf-8")
 
     @staticmethod
+    def _iter_ocr_lines(raw: Any):
+        """Yield polygons, text, and scores from PaddleOCR 2.x or 3.x output."""
+        if not raw or raw[0] is None:
+            return
+
+        first = raw[0]
+        try:
+            texts = first["rec_texts"]
+            scores = first["rec_scores"]
+            polygons = first["rec_polys"]
+        except (KeyError, TypeError, IndexError):
+            for line in first:
+                yield line[0], str(line[1][0]), float(line[1][1])
+            return
+
+        for polygon, text, score in zip(polygons, texts, scores):
+            yield polygon, str(text), float(score)
+
+    @staticmethod
     def _ensure_numpy_compat() -> None:
         """
         PaddleOCR dependencies may access `np.sctypes`, removed in NumPy 2.0.
@@ -152,7 +169,8 @@ class PaddleOCRExtractor:
         import numpy as np
 
         try:
-            return self._ocr.ocr(np.array(image, dtype=np.uint8))
+            method = getattr(self._ocr, "predict", self._ocr.ocr)
+            return method(np.array(image, dtype=np.uint8))
         except Exception as exc:
             message = str(exc).lower()
             if "primitive" not in message:
@@ -168,7 +186,8 @@ class PaddleOCRExtractor:
                 retry_image.height,
             )
             try:
-                return self._ocr.ocr(np.array(retry_image, dtype=np.uint8))
+                method = getattr(self._ocr, "predict", self._ocr.ocr)
+                return method(np.array(retry_image, dtype=np.uint8))
             except Exception as retry_exc:
                 raise RuntimeError(
                     "PaddleOCR failed after primitive-error retry."

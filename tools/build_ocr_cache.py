@@ -87,7 +87,9 @@ def box_to_pixels(box: list[int], img_w: int, img_h: int) -> tuple[int, int, int
     return x_min, y_min, x_max, y_max
 
 
-def clamp_box(x_min: int, y_min: int, x_max: int, y_max: int, img_w: int, img_h: int) -> tuple[int, int, int, int]:
+def clamp_box(
+    x_min: int, y_min: int, x_max: int, y_max: int, img_w: int, img_h: int
+) -> tuple[int, int, int, int]:
     return (
         max(0, min(x_min, img_w - 1)),
         max(0, min(y_min, img_h - 1)),
@@ -96,12 +98,22 @@ def clamp_box(x_min: int, y_min: int, x_max: int, y_max: int, img_w: int, img_h:
     )
 
 
-def expand_box(x_min: int, y_min: int, x_max: int, y_max: int, pad_fraction: float, img_w: int, img_h: int) -> tuple[int, int, int, int]:
+def expand_box(
+    x_min: int,
+    y_min: int,
+    x_max: int,
+    y_max: int,
+    pad_fraction: float,
+    img_w: int,
+    img_h: int,
+) -> tuple[int, int, int, int]:
     width = x_max - x_min
     height = y_max - y_min
     pad_x = int(round(width * pad_fraction))
     pad_y = int(round(height * pad_fraction))
-    return clamp_box(x_min - pad_x, y_min - pad_y, x_max + pad_x, y_max + pad_y, img_w, img_h)
+    return clamp_box(
+        x_min - pad_x, y_min - pad_y, x_max + pad_x, y_max + pad_y, img_w, img_h
+    )
 
 
 def build_cache_for_split(
@@ -223,7 +235,9 @@ def build_cache_for_split(
                 if not dry_run:
                     crop_base = get_crop_root(label) / doc_id
                     crop_base.mkdir(parents=True, exist_ok=True)
-                    with OCR_CROPS_METADATA.open("a", newline="", encoding="utf-8") as meta_fh:
+                    with OCR_CROPS_METADATA.open(
+                        "a", newline="", encoding="utf-8"
+                    ) as meta_fh:
                         writer = csv.DictWriter(
                             meta_fh,
                             fieldnames=[
@@ -248,7 +262,9 @@ def build_cache_for_split(
                             if not text.strip():
                                 continue
 
-                            x_min, y_min, x_max, y_max = box_to_pixels(box, img_w, img_h)
+                            x_min, y_min, x_max, y_max = box_to_pixels(
+                                box, img_w, img_h
+                            )
                             x_min, y_min, x_max, y_max = clamp_box(
                                 x_min, y_min, x_max, y_max, img_w, img_h
                             )
