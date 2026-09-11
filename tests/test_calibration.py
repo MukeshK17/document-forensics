@@ -1,9 +1,17 @@
+import importlib
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
-from src.calibration import predict_calibrated, train_calibrator
+pd = pytest.importorskip(
+    "pandas", reason="calibration tests require offline dependencies"
+)
+pytest.importorskip("joblib", reason="calibration tests require offline dependencies")
+pytest.importorskip("sklearn", reason="calibration tests require offline dependencies")
+
+calibration = importlib.import_module("src.calibration")
+predict_calibrated = calibration.predict_calibrated
+train_calibrator = calibration.train_calibrator
 
 
 @pytest.fixture
