@@ -133,7 +133,7 @@ urllib3==2.6.3
 uvicorn==0.46.0
 visualdl==2.5.3
 wcwidth==0.7.0
-Werkzeug==3.1.8
+Werkzeug==3.1.9
 streamlit==1.38.0
 
 pytz==2026.2
