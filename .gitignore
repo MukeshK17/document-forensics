@@ -19,7 +19,6 @@ colab
 outputs
 reports
 tools/crop_cards.py
-tools/
 staging_yolo_dataset
 
 vlm_test_split

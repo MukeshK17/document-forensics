@@ -1,0 +1,16 @@
+
+path: /content/yolo_dataset  # dataset root
+train: images/train        # train images
+val: images/train          # fallback split tracking
+
+names:
+  0: name
+  1: fathers_name
+  2: pan_number
+  3: date_of_birth
+  4: photo
+  5: signature
+  6: income_tax_department_header
+  7: bharat_sarkar_header
+  8: national_emblem
+  9: tampered_zone
